@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Public-Key-Verified-File-Transfer.iml" filepath="$PROJECT_DIR$/.idea/Public-Key-Verified-File-Transfer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Symmetric-Key-Verified-File-Transfer.iml" filepath="$PROJECT_DIR$/.idea/Symmetric-Key-Verified-File-Transfer.iml" />
       <module fileurl="file://$PROJECT_DIR$/src/client/client.iml" filepath="$PROJECT_DIR$/src/client/client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/src/security-manager/security-manager.iml" filepath="$PROJECT_DIR$/src/security-manager/security-manager.iml" />
       <module fileurl="file://$PROJECT_DIR$/src/server/server.iml" filepath="$PROJECT_DIR$/src/server/server.iml" />
       <module fileurl="file://$PROJECT_DIR$/src/src.iml" filepath="$PROJECT_DIR$/src/src.iml" />
     </modules>
