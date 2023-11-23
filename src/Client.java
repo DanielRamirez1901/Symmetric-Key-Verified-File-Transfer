@@ -6,6 +6,10 @@ import java.net.Socket;
 import java.security.*;
 
 public class Client {
+
+    private static DataOutputStream dataOutputStream = null;
+    private static DataInputStream dataInputStream = null;
+
     public static void main(String[] args) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
@@ -17,12 +21,14 @@ public class Client {
 
 
         Socket socket = new Socket(serverAddress, port);
+        dataInputStream = new DataInputStream(socket.getInputStream());
+        dataOutputStream = new DataOutputStream(socket.getOutputStream());
         System.out.println("Conectado al servidor");
 
-        //DHKeyPairProcess(socket);
 
-        //System.out.println("Ingrese el nombre del archivo:");
-        //String fileName = reader.readLine();
+        System.out.println("Ingrese el nombre del archivo:");
+        String fileName = reader.readLine();
+        fileName = fileName+".pdf";
 
         KeyPair clientKeyPair = generateKeyPair();
         sendPublicKeyToServer(socket, clientKeyPair.getPublic());
@@ -32,13 +38,47 @@ public class Client {
         SecretKey sharedSecret = calculateSharedSecret(clientKeyPair, serverPublicKey);
 
 
-        //sendingFileToServer(socket,fileName);
+        System.out.println("Sending the File to the Server");
+        // Call SendFile Method
+        sendFile(fileName,socket);
+
+
 
         System.out.println("Clave Cliente: "+clientKeyPair+" Clave Server: "+serverPublicKey+" Clave compartida: "+sharedSecret);
 
         socket.close();
+        dataInputStream.close();
+        dataInputStream.close();
+    }
+
+    private static void sendFile(String fileName,Socket socket) throws Exception {
+
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+        objectOutputStream.writeObject(fileName);
+        objectOutputStream.flush();
+
+        int bytes = 0;
+        // Open the File where he located in your pc
+        File file = new File("C://Users//danir//Downloads//logica proyecto.pdf");
+        FileInputStream fileInputStream
+                = new FileInputStream(file);
+
+        // Here we send the File to Server
+        dataOutputStream.writeLong(file.length());
+        // Here we  break file into chunks
+        byte[] buffer = new byte[4 * 1024];
+        while ((bytes = fileInputStream.read(buffer))
+                != -1) {
+            // Send the file to Server Socket
+            dataOutputStream.write(buffer, 0, bytes);
+            dataOutputStream.flush();
+        }
+        // close the file here
+        fileInputStream.close();
+
 
     }
+
 
 
     private static void sendingFileToServer (Socket socket,String fileName) throws IOException {
@@ -92,4 +132,3 @@ public class Client {
 
 
 }
-

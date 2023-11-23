@@ -5,12 +5,14 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
 
 
 public class Server {
+
+
+
+    private static DataOutputStream dataOutputStream = null;
+    private static DataInputStream dataInputStream = null;
     public static void main(String[] args) throws Exception {
 
         int port = 12345; // Puerto de escucha
@@ -19,6 +21,8 @@ public class Server {
         System.out.println("Servidor en espera en el puerto " + port);
 
         Socket socket = serverSocket.accept();
+        dataInputStream = new DataInputStream(socket.getInputStream());
+        dataOutputStream = new DataOutputStream(socket.getOutputStream());
         System.out.println("Cliente conectado desde " + socket.getInetAddress());
 
 
@@ -31,26 +35,40 @@ public class Server {
         //receivingFile(socket);
 
         System.out.println("Clave Server: "+serverKeyPair+" Clave cliente: "+clientPublicKey+" Calve compartida: "+sharedSecret);
+
+        receiveFile(socket);
+
+        dataInputStream.close();
+        dataOutputStream.close();
         socket.close();
         serverSocket.close();
     }
 
-    private static void receivingFile(Socket socket) throws IOException {
-        // Crea un FileOutputStream para escribir el contenido del archivo recibido
-        FileOutputStream fos = new FileOutputStream("archivo_recibido"); // Puedes cambiar el nombre según tu preferencia
+    private static void receiveFile(Socket socket) throws Exception {
+        ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+        String fileName = (String) objectInputStream.readObject();
 
-        // Lee el contenido del archivo desde el InputStream del socket y escribe en FileOutputStream
-        InputStream is = socket.getInputStream();
-        byte[] buffer = new byte[4096];
-        int bytesRead;
+        int bytes = 0;
+        FileOutputStream fileOutputStream
+                = new FileOutputStream(fileName);
 
-        while ((bytesRead = is.read(buffer)) != -1) {
-            fos.write(buffer, 0, bytesRead);
+        long size
+                = dataInputStream.readLong(); // read file size
+        byte[] buffer = new byte[4 * 1024];
+        while (size > 0
+                && (bytes = dataInputStream.read(
+                buffer, 0,
+                (int)Math.min(buffer.length, size)))
+                != -1) {
+            // Here we write the file using write method
+            fileOutputStream.write(buffer, 0, bytes);
+            size -= bytes; // read upto file size
         }
+        // Here we received file
+        System.out.println("File is Received");
+        fileOutputStream.close();
 
-        fos.close();
 
-        System.out.println("Archivo recibido "+fos);
     }
 
     private static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
@@ -82,5 +100,4 @@ public class Server {
     }
 
 }
-
 
