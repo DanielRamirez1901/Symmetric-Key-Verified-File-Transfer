@@ -37,11 +37,18 @@ public class Server {
         System.out.println("Clave Server: "+serverKeyPair+" Clave cliente: "+clientPublicKey+" Calve compartida: "+sharedSecret);
 
         receiveFile(socket);
+        String hashClient = receiveHash(socket);
+        System.out.println("Hash del cliente: "+hashClient);
 
         dataInputStream.close();
         dataOutputStream.close();
         socket.close();
         serverSocket.close();
+    }
+
+    private static String receiveHash(Socket socket) throws IOException, ClassNotFoundException {
+        ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+        return (String) objectInputStream.readObject();
     }
 
     private static void receiveFile(Socket socket) throws Exception {

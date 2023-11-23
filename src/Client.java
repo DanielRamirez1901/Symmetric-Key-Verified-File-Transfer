@@ -3,7 +3,11 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.*;
+import java.util.Base64;
 
 public class Client {
 
@@ -29,6 +33,8 @@ public class Client {
         System.out.println("Ingrese el nombre del archivo:");
         String fileName = reader.readLine();
         fileName = fileName+".pdf";
+        String filePath = "C://Users//danir//Downloads//logica proyecto.pdf";
+
 
         KeyPair clientKeyPair = generateKeyPair();
         sendPublicKeyToServer(socket, clientKeyPair.getPublic());
@@ -39,19 +45,21 @@ public class Client {
 
 
         System.out.println("Sending the File to the Server");
-        // Call SendFile Method
-        sendFile(fileName,socket);
+
+        //Call SendFile Method
+        sendFile(fileName,filePath,socket);
+        String sha256Hash = calculateFileHash(filePath);
+        sendHashToServer(sha256Hash, socket);
 
 
-
-        System.out.println("Clave Cliente: "+clientKeyPair+" Clave Server: "+serverPublicKey+" Clave compartida: "+sharedSecret);
+        System.out.println("Clave Client: "+clientKeyPair+" Clave Server: "+serverPublicKey+" Clave compartida: "+sharedSecret);
 
         socket.close();
         dataInputStream.close();
         dataInputStream.close();
     }
 
-    private static void sendFile(String fileName,Socket socket) throws Exception {
+    private static void sendFile(String fileName,String filePath,Socket socket) throws Exception {
 
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
         objectOutputStream.writeObject(fileName);
@@ -59,7 +67,7 @@ public class Client {
 
         int bytes = 0;
         // Open the File where he located in your pc
-        File file = new File("C://Users//danir//Downloads//logica proyecto.pdf");
+        File file = new File(filePath);
         FileInputStream fileInputStream
                 = new FileInputStream(file);
 
@@ -75,30 +83,12 @@ public class Client {
         }
         // close the file here
         fileInputStream.close();
-
-
     }
 
-
-
-    private static void sendingFileToServer (Socket socket,String fileName) throws IOException {
-        File file = new File(fileName);
-        if (!file.exists()) {
-            file.createNewFile();
-        }
-        // Enviar el contenido del archivo al servidor
-        OutputStream os = socket.getOutputStream();
-        FileInputStream fis = new FileInputStream(file);
-        byte[] buffer = new byte[4096];
-        int bytesRead;
-
-        while ((bytesRead = fis.read(buffer)) != -1) {
-            os.write(buffer, 0, bytesRead);
-        }
-
-        fis.close();
-
-        System.out.println("Archivo enviado al servidor "+fis);
+    private static void sendHashToServer(String hash, Socket socket) throws IOException {
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+        objectOutputStream.writeObject(hash);
+        objectOutputStream.flush();
     }
 
 
@@ -128,6 +118,22 @@ public class Client {
 
         // You may need to derive a key from the shared secret based on your requirements
         return new SecretKeySpec(sharedSecretBytes, 0, 16, "AES"); // Adjust as needed
+    }
+
+
+    public static String calculateFileHash(String filePath) throws NoSuchAlgorithmException {
+        try {
+            Path path = Paths.get(filePath);
+            byte[] fileBytes = Files.readAllBytes(path);
+
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(fileBytes);
+
+            return Base64.getEncoder().encodeToString(hashBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 
