@@ -13,20 +13,17 @@ import java.util.Base64;
 public class Server {
 
 
-
-    private static DataOutputStream dataOutputStream = null;
-    private static DataInputStream dataInputStream = null;
     public static void main(String[] args) throws Exception {
 
-        int port = 12345; // Puerto de escucha
+        int port = 12345;
 
         ServerSocket serverSocket = new ServerSocket(port);
-        System.out.println("Servidor en espera en el puerto " + port);
+        System.out.println("Server waiting in the port " + port);
 
         Socket socket = serverSocket.accept();
-        dataInputStream = new DataInputStream(socket.getInputStream());
-        dataOutputStream = new DataOutputStream(socket.getOutputStream());
-        System.out.println("Cliente conectado desde " + socket.getInetAddress());
+        DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+        DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+        System.out.println("Client connected in" + socket.getInetAddress());
 
 
         KeyPair serverKeyPair = generateKeyPair();
@@ -37,12 +34,12 @@ public class Server {
 
         //receivingFile(socket);
 
-        System.out.println("Clave Server: "+serverKeyPair+" Clave cliente: "+clientPublicKey+" Calve compartida: "+sharedSecret);
+        System.out.println("Server Password : "+serverKeyPair+" Client Password : "+clientPublicKey+" Shared Password: "+sharedSecret);
         String hashClient = receiveHash(socket);
         File file = receiveEncryptedFile(socket, sharedSecret);
         String fileHash = calculateFileHash(file);
         System.out.println("Hash of the decrypted file: " + fileHash);
-        System.out.println("Hash del cliente: "+hashClient);
+        System.out.println("Hash of the Client: "+hashClient);
 
         dataInputStream.close();
         dataOutputStream.close();
@@ -55,58 +52,7 @@ public class Server {
         return (String) objectInputStream.readObject();
     }
 
-    /*
-    private static void receiveFile(Socket socket) throws Exception {
-        ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
-        String fileName = (String) objectInputStream.readObject();
 
-        int bytes = 0;
-        FileOutputStream fileOutputStream
-                = new FileOutputStream(fileName);
-
-        long size
-                = dataInputStream.readLong(); // read file size
-        byte[] buffer = new byte[4 * 1024];
-        while (size > 0
-                && (bytes = dataInputStream.read(
-                buffer, 0,
-                (int)Math.min(buffer.length, size)))
-                != -1) {
-            // Here we write the file using write method
-            fileOutputStream.write(buffer, 0, bytes);
-            size -= bytes; // read upto file size
-        }
-        // Here we received file
-        System.out.println("File is Received");
-        fileOutputStream.close();
-
-
-    }
-     */
-    /*
-    private static void receiveEncryptedFile(Socket socket, SecretKey sharedSecret) throws Exception {
-        ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
-        String fileName = (String) objectInputStream.readObject();
-
-        // Initialize AES Cipher with shared key
-        Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(Cipher.DECRYPT_MODE, sharedSecret);
-
-        // Wrap the input stream with CipherInputStream for decryption
-        CipherInputStream cipherInputStream = new CipherInputStream(dataInputStream, cipher);
-
-        FileOutputStream fileOutputStream = new FileOutputStream(fileName);
-
-        int bytes;
-        while ((bytes = cipherInputStream.read()) != -1) {
-            fileOutputStream.write(bytes);
-        }
-
-        cipherInputStream.close();
-        fileOutputStream.close();
-    }
-
-     */
     private static File receiveEncryptedFile(Socket socket, SecretKey sharedSecret) throws Exception {
         ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
         String fileName = (String) objectInputStream.readObject();
@@ -147,7 +93,6 @@ public class Server {
 
         byte[] hashBytes = digest.digest();
 
-        // Utilizando Base64 para representar el hash
         return Base64.getEncoder().encodeToString(hashBytes);
     }
 

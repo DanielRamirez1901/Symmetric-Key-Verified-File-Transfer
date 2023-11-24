@@ -14,25 +14,24 @@ import java.util.Base64;
 public class Client {
 
     private static DataOutputStream dataOutputStream = null;
-    private static DataInputStream dataInputStream = null;
 
     public static void main(String[] args) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
 
 
-        String serverAddress = "127.0.0.1"; // Cambiar a la dirección IP del servidor
-        int port = 12345; // Puerto del servidor
-        System.out.println("Esperando conexion con el servidor....");
+        String serverAddress = "127.0.0.1";
+        int port = 12345;
+        System.out.println("Waiting Connection of server....");
 
 
         Socket socket = new Socket(serverAddress, port);
-        dataInputStream = new DataInputStream(socket.getInputStream());
+        DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
         dataOutputStream = new DataOutputStream(socket.getOutputStream());
-        System.out.println("Conectado al servidor");
+        System.out.println("Connecting to the Server");
 
 
-        System.out.println("Ingrese el nombre del archivo:");
+        System.out.println("Write the File Name:");
         String fileName = reader.readLine();
         fileName = fileName+".pdf";
         String filePath = "C://Users//danir//Downloads//logica proyecto.pdf";
@@ -55,7 +54,7 @@ public class Client {
 
 
 
-        System.out.println("Clave Client: "+clientKeyPair+" Clave Server: "+serverPublicKey+" Clave compartida: "+sharedSecret);
+        System.out.println("Client Password: "+clientKeyPair+" Server Password: "+serverPublicKey+" Shared Password: "+sharedSecret);
 
         socket.close();
         dataInputStream.close();
@@ -70,7 +69,6 @@ public class Client {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(fileBytes);
 
-            // Utilizando Base64 para representar el hash
             return Base64.getEncoder().encodeToString(hashBytes);
         } catch (Exception e) {
             e.printStackTrace();
@@ -78,33 +76,7 @@ public class Client {
         }
     }
 
-    /*
-    private static void sendFile(String fileName,String filePath,Socket socket) throws Exception {
 
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-        objectOutputStream.writeObject(fileName);
-        objectOutputStream.flush();
-
-        int bytes = 0;
-        // Open the File where he located in your pc
-        File file = new File(filePath);
-        FileInputStream fileInputStream
-                = new FileInputStream(file);
-
-        // Here we send the File to Server
-        dataOutputStream.writeLong(file.length());
-        // Here we  break file into chunks
-        byte[] buffer = new byte[4 * 1024];
-        while ((bytes = fileInputStream.read(buffer))
-                != -1) {
-            // Send the file to Server Socket
-            dataOutputStream.write(buffer, 0, bytes);
-            dataOutputStream.flush();
-        }
-        // close the file here
-        fileInputStream.close();
-    }
-     */
 
     private static void sendEncryptedFile(String fileName, String filePath, Socket socket, SecretKey sharedSecret) throws Exception {
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
@@ -168,8 +140,6 @@ public class Client {
         // You may need to derive a key from the shared secret based on your requirements
         return new SecretKeySpec(sharedSecretBytes, 0, 16, "AES"); // Adjust as needed
     }
-
-
 
 
 
