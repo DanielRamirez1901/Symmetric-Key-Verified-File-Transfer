@@ -1,3 +1,5 @@
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
 import javax.crypto.KeyAgreement;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -5,6 +7,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
+import java.util.Base64;
 
 
 public class Server {
@@ -35,9 +38,10 @@ public class Server {
         //receivingFile(socket);
 
         System.out.println("Clave Server: "+serverKeyPair+" Clave cliente: "+clientPublicKey+" Calve compartida: "+sharedSecret);
-
-        receiveFile(socket);
         String hashClient = receiveHash(socket);
+        File file = receiveEncryptedFile(socket, sharedSecret);
+        String fileHash = calculateFileHash(file);
+        System.out.println("Hash of the decrypted file: " + fileHash);
         System.out.println("Hash del cliente: "+hashClient);
 
         dataInputStream.close();
@@ -51,6 +55,7 @@ public class Server {
         return (String) objectInputStream.readObject();
     }
 
+    /*
     private static void receiveFile(Socket socket) throws Exception {
         ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
         String fileName = (String) objectInputStream.readObject();
@@ -77,6 +82,76 @@ public class Server {
 
 
     }
+     */
+    /*
+    private static void receiveEncryptedFile(Socket socket, SecretKey sharedSecret) throws Exception {
+        ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+        String fileName = (String) objectInputStream.readObject();
+
+        // Initialize AES Cipher with shared key
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.DECRYPT_MODE, sharedSecret);
+
+        // Wrap the input stream with CipherInputStream for decryption
+        CipherInputStream cipherInputStream = new CipherInputStream(dataInputStream, cipher);
+
+        FileOutputStream fileOutputStream = new FileOutputStream(fileName);
+
+        int bytes;
+        while ((bytes = cipherInputStream.read()) != -1) {
+            fileOutputStream.write(bytes);
+        }
+
+        cipherInputStream.close();
+        fileOutputStream.close();
+    }
+
+     */
+    private static File receiveEncryptedFile(Socket socket, SecretKey sharedSecret) throws Exception {
+        ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+        String fileName = (String) objectInputStream.readObject();
+
+        // Initialize AES Cipher with shared key
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.DECRYPT_MODE, sharedSecret);
+
+        // Wrap the input stream with CipherInputStream for decryption
+        CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), cipher);
+
+        File decryptedFile = new File("decrypted_" + fileName);
+        FileOutputStream fileOutputStream = new FileOutputStream(decryptedFile);
+
+        int bytes;
+        while ((bytes = cipherInputStream.read()) != -1) {
+            fileOutputStream.write(bytes);
+        }
+
+        cipherInputStream.close();
+        fileOutputStream.close();
+
+        // Calculate hash of the decrypted file
+
+        return decryptedFile;
+    }
+    private static String calculateFileHash(File file) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        FileInputStream fileInputStream = new FileInputStream(file);
+        byte[] buffer = new byte[8192];
+        int bytesRead;
+
+        while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+            digest.update(buffer, 0, bytesRead);
+        }
+
+        fileInputStream.close();
+
+        byte[] hashBytes = digest.digest();
+
+        // Utilizando Base64 para representar el hash
+        return Base64.getEncoder().encodeToString(hashBytes);
+    }
+
+
 
     private static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DH");

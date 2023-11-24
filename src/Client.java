@@ -1,3 +1,5 @@
+import javax.crypto.Cipher;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.KeyAgreement;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -47,9 +49,10 @@ public class Client {
         System.out.println("Sending the File to the Server");
 
         //Call SendFile Method
-        sendFile(fileName,filePath,socket);
         String sha256Hash = calculateFileHash(filePath);
         sendHashToServer(sha256Hash, socket);
+        sendEncryptedFile(fileName, filePath, socket, sharedSecret);
+
 
 
         System.out.println("Clave Client: "+clientKeyPair+" Clave Server: "+serverPublicKey+" Clave compartida: "+sharedSecret);
@@ -59,6 +62,23 @@ public class Client {
         dataInputStream.close();
     }
 
+    public static String calculateFileHash(String filePath) throws NoSuchAlgorithmException {
+        try {
+            Path path = Paths.get(filePath);
+            byte[] fileBytes = Files.readAllBytes(path);
+
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(fileBytes);
+
+            // Utilizando Base64 para representar el hash
+            return Base64.getEncoder().encodeToString(hashBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /*
     private static void sendFile(String fileName,String filePath,Socket socket) throws Exception {
 
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
@@ -84,6 +104,35 @@ public class Client {
         // close the file here
         fileInputStream.close();
     }
+     */
+
+    private static void sendEncryptedFile(String fileName, String filePath, Socket socket, SecretKey sharedSecret) throws Exception {
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+        objectOutputStream.writeObject(fileName);
+        objectOutputStream.flush();
+
+        // Initialize AES Cipher with shared key
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, sharedSecret);
+
+        // Wrap the output stream with CipherOutputStream for encryption
+        CipherOutputStream cipherOutputStream = new CipherOutputStream(dataOutputStream, cipher);
+
+        int bytes = 0;
+        // Open the File where it is located on your pc
+        File file = new File(filePath);
+        FileInputStream fileInputStream = new FileInputStream(file);
+
+        // Send the encrypted file to Server Socket
+        while ((bytes = fileInputStream.read()) != -1) {
+            cipherOutputStream.write(bytes);
+        }
+
+        cipherOutputStream.close();
+        fileInputStream.close();
+    }
+
+
 
     private static void sendHashToServer(String hash, Socket socket) throws IOException {
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
@@ -121,20 +170,7 @@ public class Client {
     }
 
 
-    public static String calculateFileHash(String filePath) throws NoSuchAlgorithmException {
-        try {
-            Path path = Paths.get(filePath);
-            byte[] fileBytes = Files.readAllBytes(path);
 
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(fileBytes);
-
-            return Base64.getEncoder().encodeToString(hashBytes);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
 
 }
